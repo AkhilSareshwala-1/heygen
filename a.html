@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stylish Info Form</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background-color: #3b82f6;
+      border-radius: 4px;
+    }
+    /* Button spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .animate-spin { animation: spin 1s linear infinite; }
+    /* Fade-in animation */
+    @keyframes fadeIn { from {opacity: 0; transform: translateY(10px);} to {opacity: 1; transform: none;} }
+    .fade-in { animation: fadeIn 0.5s ease forwards; }
+    /* Focus effect */
+    input:focus, select:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+      transition: all 0.3s ease;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center px-4 py-10">
+
+  <main class="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 sm:p-10 text-gray-800 font-sans fade-in">
+    <h1 class="text-3xl font-extrabold text-center text-blue-700 mb-8 tracking-tight">
+      Tell Us About You
+    </h1>
+
+    <form id="infoForm" class="space-y-6" novalidate>
+      <!-- Gender -->
+      <div>
+        <label for="gender" class="block text-gray-700 font-semibold mb-2">Gender <span class="text-red-500">*</span></label>
+        <select id="gender" name="gender" required
+          class="w-full rounded-lg border border-blue-300 py-3 px-4 bg-white text-gray-900 focus:ring-2">
+          <option value="" disabled selected>Select your gender</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </div>
+
+      <!-- Age Range -->
+      <div>
+        <label for="ageRange" class="block text-gray-700 font-semibold mb-2">Age Range <span class="text-red-500">*</span></label>
+        <select id="ageRange" name="ageRange" required
+          class="w-full rounded-lg border border-blue-300 py-3 px-4 bg-white text-gray-900 focus:ring-2">
+          <option value="" disabled selected>Select your age range</option>
+          <option value="Young">Young</option>
+          <option value="Senior">Senior</option>
+        </select>
+      </div>
+
+      <!-- Avatar Type -->
+      <div>
+        <label for="avatarType" class="block text-gray-700 font-semibold mb-2">Avatar Type <span class="text-red-500">*</span></label>
+        <select id="avatarType" name="avatarType" required
+          class="w-full rounded-lg border border-blue-300 py-3 px-4 bg-white text-gray-900 focus:ring-2">
+          <option value="" disabled selected>Select avatar type</option>
+          <option value="Professional">Professional</option>
+          <option value="Casual">Casual</option>
+        </select>
+      </div>
+
+      <!-- Instagram -->
+      <div>
+        <label for="instagram" class="block text-gray-700 font-semibold mb-2">Instagram Username <span class="text-red-500">*</span></label>
+        <input id="instagram" name="instagram" type="text" placeholder="@yourhandle" required
+          class="w-full rounded-lg border border-blue-300 py-3 px-4 focus:ring-2" />
+      </div>
+
+      <!-- Email -->
+      <div>
+        <label for="email" class="block text-gray-700 font-semibold mb-2">Email Address <span class="text-red-500">*</span></label>
+        <input id="email" name="email" type="email" placeholder="you@example.com" required
+          class="w-full rounded-lg border border-blue-300 py-3 px-4 focus:ring-2" />
+      </div>
+
+      <button type="submit"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition duration-300 disabled:bg-blue-300 flex justify-center items-center gap-2">
+        <svg id="loadingSpinner" class="animate-spin h-5 w-5 text-white hidden"
+          xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor"
+            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+        </svg>
+        <span id="btnText">Submit</span>
+      </button>
+
+      <p id="responseMsg" class="text-center text-sm mt-4 font-medium"></p>
+    </form>
+  </main>
+
+  <script>
+    const form = document.getElementById('infoForm');
+    const submitBtn = document.querySelector('button[type="submit"]');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const btnText = document.getElementById('btnText');
+    const responseMsg = document.getElementById('responseMsg');
+
+    const WEBHOOK_URL = 'http://localhost:5678/webhook-test/9f981285-ba04-4295-a5b4-d9a82be8854a'; // your webhook
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      responseMsg.textContent = '';
+      responseMsg.className = '';
+
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+
+      const formData = {
+        gender: form.gender.value,
+        ageRange: form.ageRange.value,
+        avatarType: form.avatarType.value,
+        instagram: form.instagram.value.trim(),
+        email: form.email.value.trim()
+      };
+
+      submitBtn.disabled = true;
+      loadingSpinner.classList.remove('hidden');
+      btnText.textContent = 'Submitting...';
+
+      try {
+        const res = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+
+        if (!res.ok) throw new Error(`Error: ${res.status}`);
+
+        responseMsg.textContent = 'Thank you! Your information has been submitted.';
+        responseMsg.classList.add('text-green-600');
+        form.reset();
+      } catch (error) {
+        responseMsg.textContent = 'Oops! Something went wrong. Please try again.';
+        responseMsg.classList.add('text-red-600');
+      } finally {
+        submitBtn.disabled = false;
+        loadingSpinner.classList.add('hidden');
+        btnText.textContent = 'Submit';
+      }
+    });
+  </script>
+</body>
+</html>
